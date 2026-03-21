@@ -430,7 +430,10 @@ bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
+bool command_set_pause(command_t *cmd, const char *arg);
+bool command_step_frame(command_t *cmd, const char *arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
+bool command_load_state_slot_paused(command_t *cmd, const char *arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
 bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
@@ -451,6 +454,8 @@ static const struct cmd_action_map action_map[] = {
    { "GET_STATUS",       command_get_status,       "No argument" },
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
    { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
+   { "SET_PAUSE",        command_set_pause,        "ON|OFF|TOGGLE" },
+   { "STEP_FRAME",       command_step_frame,       "<frame count>" },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
     * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
@@ -461,6 +466,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
+   { "LOAD_STATE_SLOT_PAUSED",command_load_state_slot_paused, "<slot number>"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
    { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
 
