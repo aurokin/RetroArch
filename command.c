@@ -802,6 +802,103 @@ bool command_step_frame(command_t *cmd, const char *arg)
    return true;
 }
 
+bool command_set_input_port(command_t *cmd, const char *arg)
+{
+   char reply[160];
+   char joypad_mask_str[32]       = "";
+   size_t _len                   = 0;
+   unsigned long port            = 0;
+   unsigned long long joypad_mask= 0;
+   long left_x                   = 0;
+   long left_y                   = 0;
+   long right_x                  = 0;
+   long right_y                  = 0;
+   int matched                   = 0;
+   input_driver_state_t *input_st= input_state_get_ptr();
+
+   if (!cmd || !cmd->replier || !input_st || string_is_empty(arg))
+      return false;
+
+   matched = sscanf(arg, "%lu %31s %ld %ld %ld %ld",
+         &port, joypad_mask_str, &left_x, &left_y, &right_x, &right_y);
+   if (matched < 2 || port >= MAX_USERS)
+      return false;
+
+   joypad_mask = strtoull(joypad_mask_str, NULL, 0);
+
+   input_st->agent_input_override[port]      = true;
+   input_st->agent_input_joypad_mask[port]   = (uint16_t)joypad_mask;
+   input_st->agent_input_analog[port][0][0]  = (matched >= 3) ? (int16_t)left_x : 0;
+   input_st->agent_input_analog[port][0][1]  = (matched >= 4) ? (int16_t)left_y : 0;
+   input_st->agent_input_analog[port][1][0]  = (matched >= 5) ? (int16_t)right_x : 0;
+   input_st->agent_input_analog[port][1][1]  = (matched >= 6) ? (int16_t)right_y : 0;
+
+   _len  = strlcpy(reply, "SET_INPUT_PORT ", sizeof(reply));
+   _len += snprintf(reply + _len, sizeof(reply) - _len,
+         "%lu mask=%u lx=%d ly=%d rx=%d ry=%d\n",
+         port,
+         (unsigned)input_st->agent_input_joypad_mask[port],
+         input_st->agent_input_analog[port][0][0],
+         input_st->agent_input_analog[port][0][1],
+         input_st->agent_input_analog[port][1][0],
+         input_st->agent_input_analog[port][1][1]);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
+bool command_clear_input_port(command_t *cmd, const char *arg)
+{
+   char reply[64];
+   size_t _len                   = 0;
+   unsigned long port            = 0;
+   input_driver_state_t *input_st= input_state_get_ptr();
+
+   if (!cmd || !cmd->replier || !input_st || string_is_empty(arg))
+      return false;
+
+   port = strtoul(arg, NULL, 10);
+   if (port >= MAX_USERS)
+      return false;
+
+   input_st->agent_input_override[port]     = false;
+   input_st->agent_input_joypad_mask[port]  = 0;
+   memset(input_st->agent_input_analog[port], 0,
+         sizeof(input_st->agent_input_analog[port]));
+
+   _len  = strlcpy(reply, "CLEAR_INPUT_PORT ", sizeof(reply));
+   _len += snprintf(reply + _len, sizeof(reply) - _len, "%lu\n", port);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
+bool command_get_input_port(command_t *cmd, const char *arg)
+{
+   char reply[160];
+   size_t _len                   = 0;
+   unsigned long port            = 0;
+   input_driver_state_t *input_st= input_state_get_ptr();
+
+   if (!cmd || !cmd->replier || !input_st || string_is_empty(arg))
+      return false;
+
+   port = strtoul(arg, NULL, 10);
+   if (port >= MAX_USERS)
+      return false;
+
+   _len  = strlcpy(reply, "GET_INPUT_PORT ", sizeof(reply));
+   _len += snprintf(reply + _len, sizeof(reply) - _len,
+         "%lu enabled=%s mask=%u lx=%d ly=%d rx=%d ry=%d\n",
+         port,
+         input_st->agent_input_override[port] ? "true" : "false",
+         (unsigned)input_st->agent_input_joypad_mask[port],
+         input_st->agent_input_analog[port][0][0],
+         input_st->agent_input_analog[port][0][1],
+         input_st->agent_input_analog[port][1][0],
+         input_st->agent_input_analog[port][1][1]);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
 
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {

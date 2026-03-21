@@ -432,6 +432,9 @@ bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_set_pause(command_t *cmd, const char *arg);
 bool command_step_frame(command_t *cmd, const char *arg);
+bool command_set_input_port(command_t *cmd, const char *arg);
+bool command_clear_input_port(command_t *cmd, const char *arg);
+bool command_get_input_port(command_t *cmd, const char *arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_load_state_slot_paused(command_t *cmd, const char *arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
@@ -456,6 +459,9 @@ static const struct cmd_action_map action_map[] = {
    { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
    { "SET_PAUSE",        command_set_pause,        "ON|OFF|TOGGLE" },
    { "STEP_FRAME",       command_step_frame,       "<frame count>" },
+   { "SET_INPUT_PORT",   command_set_input_port,   "<port> <joypad_mask> [left_x left_y right_x right_y]" },
+   { "CLEAR_INPUT_PORT", command_clear_input_port, "<port>" },
+   { "GET_INPUT_PORT",   command_get_input_port,   "<port>" },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
     * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */

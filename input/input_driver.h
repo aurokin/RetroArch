@@ -681,6 +681,9 @@ typedef struct
    bool frontend_sensors_enabled;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
+   uint16_t agent_input_joypad_mask[MAX_USERS];
+   int16_t agent_input_analog[MAX_USERS][2][2];
+   bool agent_input_override[MAX_USERS];
 } input_driver_state_t;
 
 

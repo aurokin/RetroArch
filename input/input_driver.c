@@ -157,6 +157,54 @@ static void input_null_grab_mouse(void *data, bool state) { }
 static bool input_null_grab_stdin(void *data) { return false; }
 static void input_null_keypress_vibrate(void) { }
 
+static bool input_driver_agent_override_active(
+      input_driver_state_t *input_st, unsigned port)
+{
+   return port < MAX_USERS && input_st->agent_input_override[port];
+}
+
+static int16_t input_driver_agent_override_state(
+      input_driver_state_t *input_st,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id,
+      int16_t fallback)
+{
+   uint16_t joypad_mask = 0;
+
+   if (!input_driver_agent_override_active(input_st, port))
+      return fallback;
+
+   joypad_mask = input_st->agent_input_joypad_mask[port];
+   device     &= RETRO_DEVICE_MASK;
+
+   if (device == RETRO_DEVICE_JOYPAD)
+   {
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         return (int16_t)joypad_mask;
+      if (id < 16)
+         return (joypad_mask & (1u << id)) ? 1 : 0;
+      return 0;
+   }
+
+   if (device == RETRO_DEVICE_ANALOG)
+   {
+      if (idx > RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+         return 0;
+
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_ANALOG_X:
+            return input_st->agent_input_analog[port][idx][0];
+         case RETRO_DEVICE_ID_ANALOG_Y:
+            return input_st->agent_input_analog[port][idx][1];
+         default:
+            return 0;
+      }
+   }
+
+   return fallback;
+}
+
 static input_driver_t input_null = {
    input_null_init,
    input_null_poll,
@@ -7070,6 +7118,8 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 
    /* Read input state */
    result = input_state_internal(input_st, settings, port, device, idx, id);
+   result = input_driver_agent_override_state(
+         input_st, port, device, idx, id, result);
 
    /* Register any analog stick input requests for
     * this 'virtual' (core) port */
