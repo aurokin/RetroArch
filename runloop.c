@@ -5651,11 +5651,14 @@ static enum runloop_state_enum runloop_check_state(
 
    input_st->flags    &= ~(INP_FLAG_BLOCK_LIBRETRO_INPUT
                          | INP_FLAG_BLOCK_HOTKEY);
+   input_st->command_polled_this_frame = false;
 
    if (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED)
       input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
 
    input_driver_collect_system_input(input_st, settings, &current_bits);
+   input_driver_poll_commands();
+   runloop_paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 
 #ifdef HAVE_MENU
    last_input                       = current_bits;
@@ -7229,6 +7232,7 @@ int runloop_iterate(void)
    uico_driver_state_t           *uico_st = uico_state_get_ptr();
    settings_t *settings                   = config_get_ptr();
    runloop_state_t *runloop_st            = &runloop_state;
+   bool ran_core_frame                    = false;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    retro_time_t current_time              = cpu_features_get_time_usec();
 #ifdef HAVE_NETWORKING
@@ -7452,16 +7456,28 @@ int runloop_iterate(void)
 #endif
 
       if (want_runahead)
+      {
          runahead_run(
                runloop_st,
                run_ahead_num_frames,
                run_ahead_hide_warnings,
                run_ahead_secondary_instance);
+         ran_core_frame = true;
+      }
       else if (runloop_st->preempt_data)
+      {
          preempt_run(runloop_st->preempt_data, runloop_st);
+         ran_core_frame = true;
+      }
       else
 #endif
+      {
          core_run();
+         ran_core_frame = runloop_st->agent_core_frame_executed;
+      }
+
+      if (ran_core_frame && runloop_st->agent_frame_count_active)
+         runloop_st->agent_frame_count++;
    }
 
    /* Increment runtime tick counter after each call to
@@ -7585,7 +7601,7 @@ end:
       video_frame_delay(video_st, settings);
 
    /* Set paused state after x frames */
-   if (runloop_st->run_frames_and_pause > 0)
+   if (ran_core_frame && runloop_st->run_frames_and_pause > 0)
    {
       runloop_st->run_frames_and_pause--;
       if (!runloop_st->run_frames_and_pause)
@@ -8109,6 +8125,7 @@ void core_run(void)
       : (enum poll_type)(current_core->poll_type);
    bool early_polling          = (new_poll_type == POLL_TYPE_EARLY);
    bool late_polling           = (new_poll_type == POLL_TYPE_LATE);
+   runloop_st->agent_core_frame_executed = false;
 #ifdef HAVE_NETWORKING
    bool netplay_preframe       = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
@@ -8124,11 +8141,23 @@ void core_run(void)
 #endif
 
    if (early_polling)
+   {
+      runloop_st->agent_accept_skip_core_run = true;
       input_driver_poll();
+      runloop_st->agent_accept_skip_core_run = false;
+   }
    else if (late_polling)
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
 
+   if (runloop_st->agent_skip_core_run_once)
+   {
+      runloop_st->agent_skip_core_run_once = false;
+      video_driver_cached_frame();
+      return;
+   }
+
    current_core->retro_run();
+   runloop_st->agent_core_frame_executed = true;
 
 #ifdef HAVE_GAME_AI
    {

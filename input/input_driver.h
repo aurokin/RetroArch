@@ -683,6 +683,7 @@ typedef struct
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
    uint16_t agent_input_joypad_mask[MAX_USERS];
    int16_t agent_input_analog[MAX_USERS][2][2];
+   bool command_polled_this_frame;
    bool agent_input_override[MAX_USERS];
 } input_driver_state_t;
 
@@ -1183,6 +1184,7 @@ bool replay_set_serialized_data(void* buffer);
  * Input polling callback function.
  **/
 void input_driver_poll(void);
+void input_driver_poll_commands(void);
 
 /**
  * input_state_wrapper:

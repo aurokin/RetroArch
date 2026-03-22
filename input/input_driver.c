@@ -6550,6 +6550,31 @@ static void input_keys_pressed(
    } /* kb_blocked scope */
 }
 
+void input_driver_poll_commands(void)
+{
+#ifdef HAVE_COMMAND
+   size_t i;
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (input_st->command_polled_this_frame)
+      return;
+
+   input_st->command_polled_this_frame = true;
+
+   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
+   {
+      if (input_st->command[i])
+      {
+         memset(input_st->command[i]->state,
+                0, sizeof(input_st->command[i]->state));
+
+         input_st->command[i]->poll(
+            input_st->command[i]);
+      }
+   }
+#endif
+}
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -7038,19 +7063,7 @@ void input_driver_poll(void)
       }
    }
 
-#ifdef HAVE_COMMAND
-   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
-   {
-      if (input_st->command[i])
-      {
-         memset(input_st->command[i]->state,
-                0, sizeof(input_st->command[i]->state));
-
-         input_st->command[i]->poll(
-            input_st->command[i]);
-      }
-   }
-#endif
+   input_driver_poll_commands();
 
 #ifdef HAVE_NETWORKGAMEPAD
    /* Poll remote */

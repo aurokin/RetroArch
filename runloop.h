@@ -254,6 +254,7 @@ struct runloop
    unsigned subsystem_current_count;
    unsigned video_swap_interval_auto;
    int16_t entry_state_slot;
+   uint64_t agent_frame_count;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 
@@ -302,6 +303,10 @@ struct runloop
 
    bool perfcnt_enable;
    bool paused_hotkey;
+   bool agent_accept_skip_core_run;
+   bool agent_core_frame_executed;
+   bool agent_frame_count_active;
+   bool agent_skip_core_run_once;
 };
 
 typedef struct runloop runloop_state_t;

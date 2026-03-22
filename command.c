@@ -908,6 +908,7 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
    _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
@@ -921,7 +922,14 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    if (savestates_enabled)
    {
       if ((ret = content_load_state(state_path, false, false)))
+      {
          command_post_state_loaded();
+         if (runloop_st)
+         {
+            runloop_st->agent_frame_count        = 0;
+            runloop_st->agent_frame_count_active = true;
+         }
+      }
    }
    else
       ret = false;
@@ -938,6 +946,7 @@ bool command_load_state_slot_paused(command_t *cmd, const char *arg)
    unsigned int slot                = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled          = core_info_current_supports_savestate();
    bool ret                         = false;
+   runloop_state_t *runloop_st      = runloop_state_get_ptr();
 
    _len  = strlcpy(reply, "LOAD_STATE_SLOT_PAUSED ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
@@ -957,6 +966,13 @@ bool command_load_state_slot_paused(command_t *cmd, const char *arg)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
          command_post_state_loaded();
+         if (runloop_st)
+         {
+            runloop_st->agent_frame_count        = 0;
+            runloop_st->agent_frame_count_active = true;
+            if (runloop_st->agent_accept_skip_core_run)
+               runloop_st->agent_skip_core_run_once = true;
+         }
          if (video_st)
             video_st->frame_count = 0;
          command_event(CMD_EVENT_PAUSE, NULL);
@@ -1295,10 +1311,19 @@ bool command_get_status(command_t *cmd, const char* arg)
       else
          _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
 
+      {
+         unsigned long long frame_value = 0;
+
+         if (runloop_st->agent_frame_count_active)
+            frame_value = (unsigned long long)runloop_st->agent_frame_count;
+         else if (video_st)
+            frame_value = (unsigned long long)video_st->frame_count;
+
       _len += snprintf(reply + _len, sizeof(reply) - _len,
             ",crc32=%lx,frame=%llu\n",
             (unsigned long)content_get_crc(),
-            (unsigned long long)(video_st ? video_st->frame_count : 0));
+            frame_value);
+      }
    }
    else
       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
