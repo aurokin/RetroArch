@@ -430,6 +430,7 @@ bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
+bool command_ping(command_t *cmd, const char *arg);
 bool command_set_pause(command_t *cmd, const char *arg);
 bool command_step_frame(command_t *cmd, const char *arg);
 bool command_set_input_port(command_t *cmd, const char *arg);
@@ -455,6 +456,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>" },
 #endif
    { "VERSION",          command_version,          "No argument"},
+   { "PING",             command_ping,             "No argument" },
    { "GET_STATUS",       command_get_status,       "No argument" },
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
    { "SHOW_MSG",         command_show_osd_msg,     "No argument" },

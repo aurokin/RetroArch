@@ -780,6 +780,22 @@ bool command_set_pause(command_t *cmd, const char *arg)
    return true;
 }
 
+bool command_ping(command_t *cmd, const char *arg)
+{
+   char reply[32];
+   size_t _len = 0;
+
+   (void)arg;
+
+   if (!cmd || !cmd->replier)
+      return false;
+
+   _len  = strlcpy(reply, "PING ", sizeof(reply));
+   _len += strlcpy(reply + _len, "OK\n", sizeof(reply) - _len);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
 bool command_step_frame(command_t *cmd, const char *arg)
 {
    char reply[64];
