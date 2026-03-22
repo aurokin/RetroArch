@@ -985,6 +985,24 @@ bool command_load_state_slot_paused(command_t *cmd, const char *arg)
    return ret;
 }
 
+bool command_wait_save_state(command_t *cmd, const char *arg)
+{
+   char reply[64];
+   size_t _len = 0;
+
+   (void)arg;
+
+   if (!cmd || !cmd->replier)
+      return false;
+
+   content_wait_for_save_state_task();
+
+   _len  = strlcpy(reply, "WAIT_SAVE_STATE ", sizeof(reply));
+   _len += strlcpy(reply + _len, "DONE\n", sizeof(reply) - _len);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
 bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
