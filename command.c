@@ -794,7 +794,7 @@ bool command_step_frame(command_t *cmd, const char *arg)
       return false;
 
    runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
-   runloop_st->run_frames_and_pause = (frames > INT8_MAX) ? INT8_MAX : (int8_t)frames;
+   runloop_st->run_frames_and_pause = (frames > INT32_MAX) ? INT32_MAX : (int32_t)frames;
 
    _len  = strlcpy(reply, "STEP_FRAME ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%u\n", frames);
