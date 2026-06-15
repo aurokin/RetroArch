@@ -1139,7 +1139,7 @@ void* video_display_server_init(enum rarch_display_type type)
       default:
 #if defined(ANDROID)
          current_display_server = &dispserv_android;
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL))
          current_display_server = &dispserv_apple;
 #else
          current_display_server = &dispserv_null;

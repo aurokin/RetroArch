@@ -2101,7 +2101,7 @@ static struct vk_buffer_chain vulkan_buffer_chain_init(
 }
 
 static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
-#if defined(__APPLE__)
+#if defined(__APPLE__) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &gfx_ctx_cocoavk,
 #endif
 #if defined(_WIN32) && !defined(__WINRT__)

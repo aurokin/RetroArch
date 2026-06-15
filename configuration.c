@@ -3107,7 +3107,7 @@ void config_set_defaults(void *data)
 #endif
 #endif
 
-#if __APPLE__
+#if defined(__APPLE__) && defined(HAVE_ACCESSIBILITY)
    configuration_set_bool(settings,
          settings->bools.accessibility_enable, RAIsVoiceOverRunning());
 #endif

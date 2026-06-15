@@ -39,7 +39,7 @@
 #include <objc/message.h>
 #endif
 
-#if defined(OSX)
+#if defined(OSX) || defined(__APPLE__)
 #include <Carbon/Carbon.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>

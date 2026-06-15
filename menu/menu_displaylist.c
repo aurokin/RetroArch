@@ -18,6 +18,10 @@
 
 #include <stddef.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
 

@@ -426,8 +426,11 @@ ifeq ($(HAVE_NEAREST_RESAMPLER), 1)
    OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o
 endif
 
+ifneq ($(OS), Darwin)
+OBJ += $(LIBRETRO_COMM_DIR)/utils/md5.o
+endif
+
 OBJ += \
-       $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        verbosity.o \
