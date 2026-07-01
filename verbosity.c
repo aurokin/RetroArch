@@ -324,7 +324,13 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          }
 
 #if TARGET_OS_OSX
-         printf("%s %s", tag_v, buffer);
+         /* Mirror to stdout only when the primary sink is a real log file.
+            When fp is stderr (the default) and a session redirects both
+            streams to one file, the stdout copy sits in a block buffer and
+            flushes late, replaying the whole early log as a phantom second
+            startup (double banner). */
+         if (!fp || fp != stderr)
+            printf("%s %s", tag_v, buffer);
          if (fp)
          {
             fprintf(fp, "%s %s", tag_v, buffer);
