@@ -868,6 +868,18 @@ static ui_application_t ui_application_cocoa = {
       struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
       NSString *__core                  = [filenames objectAtIndex:0];
       const char *core_name             = sysinfo->library_name;
+      const char *loaded_content        = path_get(RARCH_PATH_CONTENT);
+
+      /* AppKit re-delivers command-line content as an open-files event
+         right after launch; pushing a second load of the already-loaded
+         content deinits the live core mid-init (agent sessions saw a
+         second startup banner and a parallel-RDP re-init race). */
+      if (   loaded_content
+          && string_is_equal(loaded_content, __core.UTF8String))
+      {
+         [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+         return;
+      }
 
       if (core_name)
       {
