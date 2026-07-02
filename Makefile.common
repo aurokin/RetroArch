@@ -2628,10 +2628,16 @@ ifeq ($(HAVE_COCOA_METAL), 1)
 endif
 
 ifeq ($(HAVE_COCOA_COMMON),1)
-   DEFINES += -DHAVE_MAIN -DOSX
+   DEFINES += -DHAVE_MAIN -DOSX -DHAVE_CORELOCATION
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
-          ui/drivers/cocoa/cocoa_common.o
+          ui/drivers/cocoa/cocoa_common.o \
+          ui/drivers/cocoa/RetroArchPlaylistManager.o \
+          gfx/display_servers/dispserv_apple.o \
+          location/drivers/corelocation.o
+   # cocoa_common.m needs QuartzCore (CAMetalLayer, CAFrameRateRange),
+   # coreaudio needs Accelerate (vDSP), corelocation needs CoreLocation.
+   LIBS += -framework QuartzCore -framework Accelerate -framework CoreLocation
 
    ifeq ($(HAVE_OPENGL), 1)
            DEFINES += -DGL_SILENCE_DEPRECATION

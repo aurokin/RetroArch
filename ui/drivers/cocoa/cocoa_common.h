@@ -130,6 +130,8 @@ void *cocoa_screen_get_chosen(void);
 
 bool cocoa_launch_game_by_filename(NSString *filename);
 
+void cocoa_file_load_with_detect_core(const char *filename);
+
 #ifdef HAVE_COCOATOUCH
 float cocoa_screen_get_native_scale(void);
 #else

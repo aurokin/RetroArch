@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#include <retro_miscellaneous.h>
 #include "../../../playlist.h"
 
 NS_ASSUME_NONNULL_BEGIN
