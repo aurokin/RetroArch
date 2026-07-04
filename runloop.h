@@ -307,6 +307,7 @@ struct runloop
    bool agent_core_frame_executed;
    bool agent_frame_count_active;
    bool agent_skip_core_run_once;
+   bool agent_start_paused_pending;
 };
 
 typedef struct runloop runloop_state_t;

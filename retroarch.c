@@ -302,7 +302,8 @@ enum
    RA_OPT_SET_SHADER,
    RA_OPT_DATABASE_SCAN,
    RA_OPT_ACCESSIBILITY,
-   RA_OPT_LOAD_MENU_ON_ERROR
+   RA_OPT_LOAD_MENU_ON_ERROR,
+   RA_OPT_START_PAUSED
 };
 
 /* DRIVERS */
@@ -6844,6 +6845,8 @@ static void retroarch_print_help(const char *arg0)
          "Detach program from the running console. Not relevant for all platforms.\n"
          "      --max-frames=NUMBER        "
          "Runs for the specified number of frames, then exits.\n"
+         "      --start-paused             "
+         "Pause before the first core frame runs (agent frame 0).\n"
          , sizeof(buf) - _len);
 
 #ifdef HAVE_PATCH
@@ -7168,6 +7171,7 @@ static bool retroarch_parse_input_and_config(
       { "features",           0, NULL, RA_OPT_FEATURES },
       { "subsystem",          1, NULL, RA_OPT_SUBSYSTEM },
       { "max-frames",         1, NULL, RA_OPT_MAX_FRAMES },
+      { "start-paused",       0, NULL, RA_OPT_START_PAUSED },
       { "max-frames-ss",      0, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT },
       { "max-frames-ss-path", 1, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT_PATH },
       { "eof-exit",           0, NULL, RA_OPT_EOF_EXIT },
@@ -7697,6 +7701,10 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_MAX_FRAMES:
                runloop_st->max_frames  = (unsigned)strtoul(optarg, NULL, 10);
+               break;
+
+            case RA_OPT_START_PAUSED:
+               runloop_st->agent_start_paused_pending = true;
                break;
 
             case RA_OPT_MAX_FRAMES_SCREENSHOT:

@@ -7421,6 +7421,19 @@ int runloop_iterate(void)
          goto end;
       case RUNLOOP_STATE_ITERATE:
          runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
+         /* --start-paused: content is live but this frame's core_run()
+          * has not happened yet, so pausing here parks the session at
+          * agent frame 0 (GET_STATUS reports the agent counter). The
+          * stdin command interface stays responsive on the paused path. */
+         if (runloop_st->agent_start_paused_pending)
+         {
+            runloop_st->agent_start_paused_pending = false;
+            runloop_st->agent_frame_count          = 0;
+            runloop_st->agent_frame_count_active   = true;
+            command_event(CMD_EVENT_PAUSE, NULL);
+            video_driver_cached_frame();
+            goto end;
+         }
          break;
    }
 
