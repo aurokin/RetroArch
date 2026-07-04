@@ -1096,6 +1096,122 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 #endif
 }
 
+bool command_record_replay_path(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[PATH_MAX_LENGTH + 32];
+   size_t _len;
+   bool ret                       = false;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   /* Serializing before the core has run a single frame crashes at least
+    * the mupen64plus savestate path (lazy init on first retro_run), so
+    * when the agent frame counter is live (--start-paused /
+    * LOAD_STATE_SLOT_PAUSED flows) refuse to anchor at frame 0. */
+   bool core_frame_ran            = !runloop_st->agent_frame_count_active
+         || runloop_st->agent_frame_count > 0;
+
+   if (     arg && *arg
+         && core_frame_ran
+         && core_serialize_size() > 0
+         && !(input_st->bsv_movie_state.flags
+            & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
+   {
+      /* The record task writes the BSV2 header plus a full checkpoint of
+       * the CURRENT core state before any frame token, so a recording
+       * started while paused is anchored at exactly that frame; the
+       * handle is installed on the next runloop iteration (paused
+       * iterations included). */
+      if ((ret = movie_start_record(input_st, (char *)arg)))
+         task_queue_wait(NULL, NULL);
+   }
+   if (ret)
+      _len = snprintf(reply, sizeof(reply),
+            "RECORD_REPLAY_PATH OK %s\n", arg);
+   else
+      _len = strlcpy(reply, "RECORD_REPLAY_PATH NO\n", sizeof(reply));
+   cmd->replier(cmd, reply, _len);
+   return ret;
+#else
+   cmd->replier(cmd, "RECORD_REPLAY_PATH NO\n",
+         STRLEN_CONST("RECORD_REPLAY_PATH NO\n"));
+   return false;
+#endif
+}
+
+bool command_play_replay_path(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[PATH_MAX_LENGTH + 32];
+   size_t _len;
+   bool ret                       = false;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   /* Same lazy-init constraint as RECORD_REPLAY_PATH, on the read side:
+    * the movie's anchor checkpoint is deserialized while the playback
+    * task runs, which fails (mupen64plus) before the core has run a
+    * frame. -P at launch hits exactly that, so anchored playback is a
+    * mid-session command instead. */
+   bool core_frame_ran            = !runloop_st->agent_frame_count_active
+         || runloop_st->agent_frame_count > 0;
+
+   if (     arg && *arg
+         && core_frame_ran
+         && core_serialize_size() > 0
+         && !(input_st->bsv_movie_state.flags
+            & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
+   {
+      if ((ret = movie_start_playback(input_st, (char *)arg)))
+      {
+         task_queue_wait(NULL, NULL);
+         /* The anchor state is restored by the playback task; re-zero
+          * the agent frame counter so frame= counts playback frames
+          * from the anchor, mirroring LOAD_STATE_SLOT_PAUSED. */
+         command_post_state_loaded();
+         runloop_st->agent_frame_count        = 0;
+         runloop_st->agent_frame_count_active = true;
+      }
+   }
+   if (ret)
+      _len = snprintf(reply, sizeof(reply),
+            "PLAY_REPLAY_PATH OK %s\n", arg);
+   else
+      _len = strlcpy(reply, "PLAY_REPLAY_PATH NO\n", sizeof(reply));
+   cmd->replier(cmd, reply, _len);
+   return ret;
+#else
+   cmd->replier(cmd, "PLAY_REPLAY_PATH NO\n",
+         STRLEN_CONST("PLAY_REPLAY_PATH NO\n"));
+   return false;
+#endif
+}
+
+bool command_stop_replay(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[64];
+   size_t _len;
+   bool ret                       = false;
+   long long frames               = -1;
+   input_driver_state_t *input_st = input_state_get_ptr();
+
+   if (input_st->bsv_movie_state_handle)
+      frames = (long long)input_st->bsv_movie_state_handle->frame_counter;
+   if (input_st->bsv_movie_state.flags
+         & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING))
+      ret = movie_stop(input_st);
+   if (ret)
+      _len = snprintf(reply, sizeof(reply), "STOP_REPLAY OK %lld\n", frames);
+   else
+      _len = strlcpy(reply, "STOP_REPLAY NO\n", sizeof(reply));
+   cmd->replier(cmd, reply, _len);
+   return ret;
+#else
+   cmd->replier(cmd, "STOP_REPLAY NO\n", STRLEN_CONST("STOP_REPLAY NO\n"));
+   return false;
+#endif
+}
+
 bool command_save_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];

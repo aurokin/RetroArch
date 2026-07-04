@@ -441,6 +441,9 @@ bool command_load_state_slot_paused(command_t *cmd, const char *arg);
 bool command_wait_save_state(command_t *cmd, const char *arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
 bool command_seek_replay(command_t *cmd, const char *arg);
+bool command_record_replay_path(command_t *cmd, const char *arg);
+bool command_play_replay_path(command_t *cmd, const char *arg);
+bool command_stop_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
 bool command_load_savefiles(command_t *cmd, const char* arg);
 #ifdef HAVE_CHEEVOS
@@ -479,6 +482,9 @@ static const struct cmd_action_map action_map[] = {
    { "WAIT_SAVE_STATE",command_wait_save_state, "No argument"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
    { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
+   { "RECORD_REPLAY_PATH",command_record_replay_path, "<replay file path>"},
+   { "PLAY_REPLAY_PATH",command_play_replay_path, "<replay file path>"},
+   { "STOP_REPLAY",command_stop_replay, "No argument"},
 
    { "SAVE_FILES", command_save_savefiles, "No argument"},
    { "LOAD_FILES", command_load_savefiles, "No argument"},
