@@ -962,6 +962,9 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       case VULKAN_WSI_DISPLAY:
          required_extensions[required_extension_count++] = "VK_KHR_display";
          break;
+      case VULKAN_WSI_HEADLESS:
+         required_extensions[required_extension_count++] = VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME;
+         break;
       case VULKAN_WSI_MVK_MACOS:
       case VULKAN_WSI_MVK_IOS:
          required_extensions[required_extension_count++] = "VK_EXT_metal_surface";
@@ -1749,6 +1752,28 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                   &width, &height,
                   (const struct vulkan_display_surface_info*)display))
             return false;
+         break;
+      case VULKAN_WSI_HEADLESS:
+         {
+            VkHeadlessSurfaceCreateInfoEXT surf_info;
+            PFN_vkCreateHeadlessSurfaceEXT create;
+            VkResult res;
+
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance,
+                     "vkCreateHeadlessSurfaceEXT", create))
+               return false;
+
+            surf_info.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
+            surf_info.pNext = NULL;
+            surf_info.flags = 0;
+
+            res = create(vk->context.instance, &surf_info, NULL, &vk->vk_surface);
+            if (res != VK_SUCCESS)
+            {
+               RARCH_ERR("[Vulkan] Failed to create headless surface (VkResult: %d).\n", res);
+               return false;
+            }
+         }
          break;
       case VULKAN_WSI_MVK_MACOS:
       case VULKAN_WSI_MVK_IOS:
