@@ -1,6 +1,6 @@
 # Experimental headless Vulkan context
 
-Status: spike-only. This is intended for automated eval runners on render-only or connectorless Vulkan devices, especially Intel B50 SR-IOV VFs on Bront (`saur` / `tortle`). It is not planned for merge at this time.
+Status: merged into `agent-control` 2026-07-06 after adversarial review. This is intended for automated eval runners on render-only or connectorless Vulkan devices, especially Intel B50 SR-IOV VFs on Bront (`saur` / `tortle`). Not intended for upstream RetroArch. `headless_vk` is ordered after `gfx_ctx_null` in the Vulkan context list, so it is reachable only by explicit `video_context_driver = "headless_vk"` — auto-fallback on display hosts can never select it.
 
 ## Context driver
 
@@ -45,4 +45,4 @@ When combined with the `agent-control` branch and the `parallel-n64` adapter ove
 - This path is for automated runs, not visible desktop presentation.
 - It depends on command/readback workflows for evidence.
 - Screenshot hashes can differ from headed/X11 baselines; semantic traces should be used to decide whether a new headless baseline should be minted.
-- The branch is intentionally isolated; no merge into mainline is currently planned.
+- Merged into `agent-control` (see Status above); not intended for upstream RetroArch mainline.

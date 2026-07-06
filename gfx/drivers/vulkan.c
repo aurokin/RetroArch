@@ -2119,8 +2119,12 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #if defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif
-   &gfx_ctx_headless_vk,
    &gfx_ctx_null,
+   /* After gfx_ctx_null so auto-fallback can never select it: a display-host
+    * context failure must stay a loud failure, not a silent skip-present
+    * headless session. Reachable only by explicit video_context_driver
+    * ident match, which scans the full list. */
+   &gfx_ctx_headless_vk,
    NULL
 };
 
