@@ -1734,6 +1734,7 @@ ifeq ($(HAVE_VULKAN), 1)
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
+          gfx/drivers_context/headless_vk_ctx.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o
 
    ifeq ($(HAVE_SLANG), 1)

@@ -344,6 +344,7 @@ VIDEO CONTEXT
 #ifdef HAVE_VULKAN_DISPLAY
 #include "../gfx/drivers_context/khr_display_ctx.c"
 #endif
+#include "../gfx/drivers_context/headless_vk_ctx.c"
 #endif
 
 #if defined(HAVE_KMS)

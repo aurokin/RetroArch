@@ -2974,6 +2974,7 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #if defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif
+   &gfx_ctx_headless_vk,
    &gfx_ctx_null,
    NULL
 };
