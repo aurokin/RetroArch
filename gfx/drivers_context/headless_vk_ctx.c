@@ -8,6 +8,7 @@
  *  display connector dependency.
  */
 
+#include <assert.h>
 #include <compat/strl.h>
 #include <retro_timers.h>
 #include <string/stdstring.h>
@@ -179,15 +180,68 @@ static void gfx_ctx_headless_vk_set_swap_interval(void *data,
 static void gfx_ctx_headless_vk_swap_buffers(void *data)
 {
    headless_vk_ctx_data_t *headless = (headless_vk_ctx_data_t*)data;
-   if (headless->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+   gfx_ctx_vulkan_data_t *vk        = &headless->vk;
+   vulkan_context_t *ctx            = &vk->context;
+   unsigned index;
+
+   if (ctx->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      headless->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (headless->vk.swapchain == VK_NULL_HANDLE)
+      /* Intel's Mesa driver can create a VK_EXT_headless_surface swapchain,
+       * but vkQueuePresentKHR() on that surface currently crashes on B50 SR-IOV
+       * VFs. For the eval path we only need the submitted render work and
+       * readback, not compositor presentation, so keep the initially acquired
+       * image and recycle RetroArch's frame fences without presenting. */
+      if (vk->swapchain == VK_NULL_HANDLE)
          retro_sleep(10);
       else
-         vulkan_present(&headless->vk, headless->vk.context.current_swapchain_index);
+      {
+#ifdef HAVE_THREADS
+         slock_lock(ctx->queue_lock);
+#endif
+         vkQueueWaitIdle(ctx->queue);
+#ifdef HAVE_THREADS
+         slock_unlock(ctx->queue_lock);
+#endif
+
+         if (ctx->swapchain_semaphores[ctx->current_swapchain_index]
+               != VK_NULL_HANDLE)
+         {
+            vkDestroySemaphore(ctx->device,
+                  ctx->swapchain_semaphores[ctx->current_swapchain_index], NULL);
+            ctx->swapchain_semaphores[ctx->current_swapchain_index] = VK_NULL_HANDLE;
+         }
+      }
    }
-   vulkan_acquire_next_image(&headless->vk);
+
+   ctx->current_frame_index =
+      (ctx->current_frame_index + 1) % ctx->num_swapchain_images;
+   index = ctx->current_frame_index;
+
+   if (ctx->swapchain_fences[index] != VK_NULL_HANDLE)
+   {
+      if (ctx->swapchain_fences_signalled[index])
+         vkWaitForFences(ctx->device, 1,
+               &ctx->swapchain_fences[index], true, UINT64_MAX);
+      vkResetFences(ctx->device, 1, &ctx->swapchain_fences[index]);
+   }
+   else
+   {
+      VkFenceCreateInfo fence_info;
+      fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      fence_info.pNext = NULL;
+      fence_info.flags = 0;
+      vkCreateFence(ctx->device, &fence_info, NULL,
+            &ctx->swapchain_fences[index]);
+   }
+   ctx->swapchain_fences_signalled[index] = false;
+
+   if (ctx->swapchain_wait_semaphores[index] != VK_NULL_HANDLE)
+   {
+      assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
+      ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] =
+         ctx->swapchain_wait_semaphores[index];
+      ctx->swapchain_wait_semaphores[index] = VK_NULL_HANDLE;
+   }
 }
 
 static uint32_t gfx_ctx_headless_vk_get_flags(void *data)
