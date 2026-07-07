@@ -439,6 +439,7 @@ bool command_get_input_port(command_t *cmd, const char *arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_load_state_slot_paused(command_t *cmd, const char *arg);
 bool command_wait_save_state(command_t *cmd, const char *arg);
+bool command_wait_load_state(command_t *cmd, const char *arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
 bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_record_replay_path(command_t *cmd, const char *arg);
@@ -480,6 +481,7 @@ static const struct cmd_action_map action_map[] = {
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
    { "LOAD_STATE_SLOT_PAUSED",command_load_state_slot_paused, "<slot number>"},
    { "WAIT_SAVE_STATE",command_wait_save_state, "No argument"},
+   { "WAIT_LOAD_STATE",command_wait_load_state, "No argument"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
    { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
    { "RECORD_REPLAY_PATH",command_record_replay_path, "<replay file path>"},

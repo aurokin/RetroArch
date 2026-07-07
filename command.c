@@ -1019,6 +1019,31 @@ bool command_wait_save_state(command_t *cmd, const char *arg)
    return true;
 }
 
+/* Mirror of command_wait_save_state for the load path: LOAD_STATE_SLOT[_PAUSED]
+ * only queues an async TASK_TYPE_BLOCKING load and replies before it is pumped,
+ * so its reply is not a completion ack. A client that needs the state actually
+ * resident (e.g. the eval replay driver re-anchoring on a load) sends
+ * LOAD_STATE_SLOT_PAUSED then WAIT_LOAD_STATE, exactly as SAVE pairs with
+ * WAIT_SAVE_STATE. content_wait_for_load_state_task() already existed for this
+ * (task_save.c) but had no command wired to it. */
+bool command_wait_load_state(command_t *cmd, const char *arg)
+{
+   char reply[64];
+   size_t _len = 0;
+
+   (void)arg;
+
+   if (!cmd || !cmd->replier)
+      return false;
+
+   content_wait_for_load_state_task();
+
+   _len  = strlcpy(reply, "WAIT_LOAD_STATE ", sizeof(reply));
+   _len += strlcpy(reply + _len, "DONE\n", sizeof(reply) - _len);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
 bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
