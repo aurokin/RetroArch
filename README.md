@@ -4,6 +4,11 @@
 
 # RetroArch
 
+> **Agent-control branch:** This branch adds deterministic command and replay
+> transport plus an explicit headless Vulkan context. See
+> [the command contract](docs/agent-control.md) and
+> [headless Vulkan documentation](docs/headless-vulkan-context.md).
+
 RetroArch is the reference frontend for the libretro API.
 Popular examples of implementations for this API includes video game system emulators and game engines as well as
 more generalized 3D programs.

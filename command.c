@@ -1022,10 +1022,9 @@ bool command_wait_save_state(command_t *cmd, const char *arg)
 /* Mirror of command_wait_save_state for the load path: LOAD_STATE_SLOT[_PAUSED]
  * only queues an async TASK_TYPE_BLOCKING load and replies before it is pumped,
  * so its reply is not a completion ack. A client that needs the state actually
- * resident (e.g. the eval replay driver re-anchoring on a load) sends
- * LOAD_STATE_SLOT_PAUSED then WAIT_LOAD_STATE, exactly as SAVE pairs with
- * WAIT_SAVE_STATE. content_wait_for_load_state_task() already existed for this
- * (task_save.c) but had no command wired to it. */
+ * resident sends LOAD_STATE_SLOT_PAUSED then WAIT_LOAD_STATE, exactly as SAVE
+ * pairs with WAIT_SAVE_STATE. content_wait_for_load_state_task() already existed
+ * for this (task_save.c) but had no command wired to it. */
 bool command_wait_load_state(command_t *cmd, const char *arg)
 {
    char reply[64];
@@ -1129,10 +1128,9 @@ bool command_record_replay_path(command_t *cmd, const char *arg)
    bool ret                       = false;
    input_driver_state_t *input_st = input_state_get_ptr();
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   /* Serializing before the core has run a single frame crashes at least
-    * the mupen64plus savestate path (lazy init on first retro_run), so
-    * when the agent frame counter is live (--start-paused /
-    * LOAD_STATE_SLOT_PAUSED flows) refuse to anchor at frame 0. */
+   /* Some cores initialize serialization on their first retro_run. When the
+    * agent frame counter is live (--start-paused / LOAD_STATE_SLOT_PAUSED
+    * flows), refuse to serialize an anchor at frame 0. */
    bool core_frame_ran            = !runloop_st->agent_frame_count_active
          || runloop_st->agent_frame_count > 0;
 
@@ -1173,10 +1171,9 @@ bool command_play_replay_path(command_t *cmd, const char *arg)
    input_driver_state_t *input_st = input_state_get_ptr();
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    /* Same lazy-init constraint as RECORD_REPLAY_PATH, on the read side:
-    * the movie's anchor checkpoint is deserialized while the playback
-    * task runs, which fails (mupen64plus) before the core has run a
-    * frame. -P at launch hits exactly that, so anchored playback is a
-    * mid-session command instead. */
+    * the movie's anchor checkpoint is deserialized while the playback task
+    * runs. Cores that initialize serialization on their first retro_run
+    * require anchored playback to start after frame 0. */
    bool core_frame_ran            = !runloop_st->agent_frame_count_active
          || runloop_st->agent_frame_count > 0;
 
