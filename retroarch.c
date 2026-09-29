@@ -7623,7 +7623,9 @@ static bool retroarch_parse_input_and_config(
                if (command_network_send((const char*)optarg))
                   exit(0);
                else
-                  retroarch_fail(1, "network_cmd_send()");
+                  /* Command-only mode has not initialized the task queue or
+                   * core. Do not enter runtime teardown on a rejected command. */
+                  exit(1);
 #endif
                break;
 #endif

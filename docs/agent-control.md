@@ -5,6 +5,15 @@ deterministic input, timing, state, memory, and replay operations. The commands
 are transport-neutral: configured stdin and network command interfaces use the
 same action table in `command.h`.
 
+## Offline command advertisement
+
+`retroarch --verbose --command __LIST_SUPPORTED_COMMANDS__` prints the compiled
+command table and exits 1 because the supplied command is intentionally invalid.
+Validation rejects it before sending a UDP packet or loading content. This can
+identify supported commands without an active emulator. Command-only failures
+exit directly; they must not enter teardown of an uninitialized runtime.
+The advertisement proves command availability, not successful runtime behavior.
+
 ## Stdin Transport
 
 Build with stdin command support and set `stdin_cmd_enable = "true"` in the
