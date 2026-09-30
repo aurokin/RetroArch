@@ -186,11 +186,11 @@ static void gfx_ctx_headless_vk_swap_buffers(void *data)
 
    if (ctx->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      /* Intel's Mesa driver can create a VK_EXT_headless_surface swapchain,
-       * but vkQueuePresentKHR() on that surface currently crashes on B50 SR-IOV
-       * VFs. For the eval path we only need the submitted render work and
-       * readback, not compositor presentation, so keep the initially acquired
-       * image and recycle RetroArch's frame fences without presenting. */
+      /* Some drivers can create a VK_EXT_headless_surface swapchain, but
+       * vkQueuePresentKHR() on that surface crashes on some virtualized GPUs.
+       * Headless runs only need the submitted render work and readback, not
+       * compositor presentation, so keep the initially acquired image and
+       * recycle RetroArch's frame fences without presenting. */
       if (vk->swapchain == VK_NULL_HANDLE)
          retro_sleep(10);
       else

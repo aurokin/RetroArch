@@ -17,7 +17,7 @@
 ## Commands
 | Task | Command |
 |------|---------|
-| Configure | `./configure` |
+| Configure | `./configure` with the flags in `docs/agent-control.md` (Building) |
 | Build | `make -j4` |
 | Clean | `make clean` |
 | Check patch hygiene | `git diff --check` |

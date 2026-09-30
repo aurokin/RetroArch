@@ -5,6 +5,30 @@ deterministic input, timing, state, memory, and replay operations. The commands
 are transport-neutral: configured stdin and network command interfaces use the
 same action table in `command.h`.
 
+## Building
+
+Linux recipe used for the known-good agent-control build:
+
+```sh
+./configure --disable-wayland --enable-x11 --enable-opengl --enable-vulkan \
+  --enable-sdl2 --enable-alsa --enable-udev --enable-freetype --enable-zlib \
+  --enable-ffmpeg
+make -j4
+```
+
+- `--enable-vulkan` is required for the `headless_vk` context; it makes
+  configure fail instead of silently omitting Vulkan when headers are missing.
+- The command interface needs no flag: configure enables `HAVE_NETWORK_CMD`
+  with networking and `HAVE_STDIN_CMD` when `fcntl` is available, and either
+  one enables `HAVE_COMMAND`. Confirm all three in `config.mk` after configuring.
+- The remaining flags are host-specific: they pin the windowing, audio, input,
+  font, and media features of the reference build so its feature set does not
+  drift with installed packages. Adjust them for the target host.
+
+macOS needs a different pinned configure environment (Metal, MoltenVK, and
+no SDL2). The parallel-n64 repository's `tools/adapters` directory has a build
+helper for it.
+
 ## Offline command advertisement
 
 `retroarch --verbose --command __LIST_SUPPORTED_COMMANDS__` prints the compiled

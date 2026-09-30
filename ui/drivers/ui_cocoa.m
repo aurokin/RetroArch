@@ -875,8 +875,9 @@ static ui_application_t ui_application_cocoa = {
 
       /* AppKit re-delivers command-line content as an open-files event
          right after launch; pushing a second load of the already-loaded
-         content deinits the live core mid-init (agent sessions saw a
-         second startup banner and a parallel-RDP re-init race). */
+         content deinits the live core mid-init (observed as a second
+         startup banner and a core re-initializing its Vulkan device
+         while the first init was still running). */
       if (   loaded_content
           && string_is_equal(loaded_content, __core.UTF8String))
       {
