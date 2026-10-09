@@ -29,6 +29,47 @@ macOS needs a different pinned configure environment (Metal, MoltenVK, and
 no SDL2). The parallel-n64 repository's `tools/adapters` directory has a build
 helper for it.
 
+## macOS configuration
+
+Use `profiles/agent-control-macos.cfg` as the explicit base configuration for
+Apple Silicon macOS builds with Cocoa input, CoreAudio3 and Metal/MoltenVK:
+
+```sh
+retroarch --config /absolute/path/to/profiles/agent-control-macos.cfg \
+  --appendconfig '/absolute/path/to/session.cfg|/absolute/path/to/extra.cfg' \
+  --libretro /absolute/path/to/core.dylib /absolute/path/to/content
+```
+
+The profile pins the platform drivers, synchronous Vulkan rendering, Metal
+argument buffers and vsync. It enables stdin commands and keeps control active
+when the window loses focus. Automatic core/content overrides and remaps are
+disabled so ambient desktop settings cannot silently change the session. Saving
+the active configuration on exit is disabled. App-bundle asset extraction is
+also disabled: its completion callback saves a full config independently of the
+exit setting. Agent sessions do not require desktop menu assets. The profile contains no content,
+core options, personal paths or window preferences, and does not replace the
+tracked example `retroarch.cfg`.
+
+Configuration loads in this order: explicit base, generated session settings,
+then explicit extra files. Later files override earlier files; duplicate keys
+within one file use the first occurrence. `--appendconfig` accepts one `|`-joined
+list, and repeating the option replaces its previous list. Use separate files
+for overlays rather than concatenating duplicate keys into one file. Callers
+must validate file readability because failed appended loads only log an error.
+
+An existing `MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS` environment variable takes
+precedence over `video_use_metal_arg_buffers`, even if its value is empty. Leave
+it unset for the profile to control MoltenVK, or set it explicitly for a declared
+runtime condition. Changes require a new frontend process. The parallel-n64
+adapters accept this profile through `--base-config` or `RETROARCH_BASE_CONFIG`,
+preserve explicit environment overrides, and snapshot optional extra config
+into the session bundle. The generic Linux configuration is unchanged.
+
+Run `python3 tests-other/test_agent_control_macos_profile.py` for the real config
+parser composition check. Runtime qualification must additionally verify the
+selected build's drivers, capture, frame/input control, state barriers and
+teardown. Renderer-specific hi-res claims require the renderer's own fixtures.
+
 ## Offline command advertisement
 
 `retroarch --verbose --command __LIST_SUPPORTED_COMMANDS__` prints the compiled
