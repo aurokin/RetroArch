@@ -215,39 +215,59 @@ static bool ffmpeg_codec_has_sample_format(enum AVSampleFormat fmt,
 {
    unsigned i;
 
+   /* A NULL list allows any format; retain the packed S16 fallback. */
+   if (!fmts)
+      return fmt == AV_SAMPLE_FMT_S16;
+
    for (i = 0; fmts[i] != AV_SAMPLE_FMT_NONE; i++)
       if (fmt == fmts[i])
          return true;
    return false;
 }
 
-static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
+static bool ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
       const AVCodec *codec)
 {
+   const enum AVSampleFormat *sample_fmts;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+   const void *configs = NULL;
+
+   /* FFmpeg 7.1 added this API; FFmpeg 9 removed the AVCodec lists. */
+   if (avcodec_get_supported_config(NULL, codec,
+            AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, &configs, NULL) < 0)
+   {
+      RARCH_ERR("[FFmpeg] Cannot query supported audio sample formats.\n");
+      return false;
+   }
+   sample_fmts = (const enum AVSampleFormat*)configs;
+#else
+   sample_fmts = codec->sample_fmts;
+#endif
+
    audio->codec->sample_fmt = AV_SAMPLE_FMT_NONE;
 
-   if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_FLTP, codec->sample_fmts))
+   if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_FLTP, sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLTP;
       audio->use_float         = true;
       audio->is_planar         = true;
       RARCH_LOG("[FFmpeg] Using sample format FLTP.\n");
    }
-   else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_FLT, codec->sample_fmts))
+   else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_FLT, sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
       audio->use_float         = true;
       audio->is_planar         = false;
       RARCH_LOG("[FFmpeg] Using sample format FLT.\n");
    }
-   else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16P, codec->sample_fmts))
+   else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16P, sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16P;
       audio->use_float         = false;
       audio->is_planar         = true;
       RARCH_LOG("[FFmpeg] Using sample format S16P.\n");
    }
-   else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16, codec->sample_fmts))
+   else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16, sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
       audio->use_float         = false;
@@ -255,28 +275,48 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
       RARCH_LOG("[FFmpeg] Using sample format S16.\n");
    }
    audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
+   return true;
 }
 
-static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
+static bool ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       const AVCodec *codec)
 {
    struct ff_config_param *params  = &handle->config;
    struct record_params *param     = &handle->params;
+   const int *supported_samplerates;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+   const void *configs = NULL;
+#endif
+
+   if (params->sample_rate)
+      return true;
+
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+   if (avcodec_get_supported_config(NULL, codec,
+            AV_CODEC_CONFIG_SAMPLE_RATE, 0, &configs, NULL) < 0)
+   {
+      RARCH_ERR("[FFmpeg] Cannot query supported audio sample rates.\n");
+      return false;
+   }
+   supported_samplerates = (const int*)configs;
+#else
+   supported_samplerates = codec->supported_samplerates;
+#endif
 
    /* We'll have to force resampling to some supported sampling rate. */
-   if (codec->supported_samplerates && !params->sample_rate)
+   if (supported_samplerates && supported_samplerates[0])
    {
       unsigned i;
       int input_rate = (int)param->samplerate;
 
       /* Favor closest sampling rate, but always prefer ratio > 1.0. */
-      int best_rate  = codec->supported_samplerates[0];
+      int best_rate  = supported_samplerates[0];
       int best_diff  = best_rate - input_rate;
 
-      for (i = 1; codec->supported_samplerates[i]; i++)
+      for (i = 1; supported_samplerates[i]; i++)
       {
          bool better_rate = false;
-         int diff         = codec->supported_samplerates[i] - input_rate;
+         int diff         = supported_samplerates[i] - input_rate;
 
          if (best_diff < 0)
             better_rate   = (diff > best_diff);
@@ -285,7 +325,7 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
 
          if (better_rate)
          {
-            best_rate = codec->supported_samplerates[i];
+            best_rate = supported_samplerates[i];
             best_diff = diff;
          }
       }
@@ -293,6 +333,7 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       params->sample_rate = best_rate;
       RARCH_LOG("[FFmpeg] Using output sampling rate: %d.\n", best_rate);
    }
+   return true;
 }
 
 static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
@@ -324,8 +365,9 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
       ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 #endif
 
-   ffmpeg_audio_resolve_format(audio, codec);
-   ffmpeg_audio_resolve_sample_rate(handle, codec);
+   if (!ffmpeg_audio_resolve_format(audio, codec) ||
+       !ffmpeg_audio_resolve_sample_rate(handle, codec))
+      return false;
 
    if (params->sample_rate)
    {
