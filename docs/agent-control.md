@@ -120,7 +120,9 @@ success through the operation's logs or resulting state.
 
 `STEP_FRAME` acknowledges the accepted request before the requested frames are
 complete. Poll `GET_STATUS` when a client needs to observe the resulting frame
-count and paused state.
+count and paused state. Keep deterministic requests at or below `INT32_MAX`: the
+run-loop count is signed and larger requests are clamped, while the reply echoes
+the requested count.
 
 Anchored recording and playback require serialization support and at least one
 completed core frame. Path-based replay commands, `SEEK_REPLAY`, and
