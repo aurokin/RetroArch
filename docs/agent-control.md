@@ -106,7 +106,7 @@ the command-visible frame counter at zero.
 | `READ_CORE_MEMORY <address> <count>` | Reads system-addressed core memory. |
 | `WRITE_CORE_MEMORY <address> <bytes...>` | Writes system-addressed core memory. |
 | `PLAY_REPLAY_SLOT <slot>` | Starts replay playback from a configured replay slot. |
-| `SEEK_REPLAY <frame>` | Seeks active replay playback to a frame. |
+| `SEEK_REPLAY <frame>` | Seeks the active replay (playback or recording) to a frame; replies `OK <frame>` or `NO` without a command prefix. |
 | `RECORD_REPLAY_PATH <path>` | Starts an anchored BSV2 recording at the current state. |
 | `PLAY_REPLAY_PATH <path>` | Restores and plays an anchored BSV2 recording. |
 | `STOP_REPLAY` | Stops recording or playback and reports its frame count. |
@@ -117,6 +117,12 @@ require the loaded state. Apply the same rule to saves with `WAIT_SAVE_STATE`.
 `WAIT_* DONE` means the blocking task queue was drained; it does not report the
 underlying save or load result. Treat it as a sequencing barrier and verify
 success through the operation's logs or resulting state.
+
+`READ_CORE_MEMORY` and `WRITE_CORE_MEMORY` use the core's libretro memory map
+when one is published. Otherwise they fall back to the core's system RAM:
+addresses at or above `0x80000000` are masked with `0x1FFFFFFF` when the result
+fits in that RAM, and failures reply `-1 no system ram data` or
+`-1 address outside system ram`.
 
 `STEP_FRAME` acknowledges the accepted request before the requested frames are
 complete. Poll `GET_STATUS` when a client needs to observe the resulting frame
